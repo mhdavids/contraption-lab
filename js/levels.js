@@ -288,6 +288,34 @@ const BOARD_W = 960, BOARD_H = 600, FLOOR_TOP = 566;
     inventory: { trampoline: 1 },
   };
 
+  // ---- Level 17: Relay Race (multi-step: slide -> drop onto trampoline -> bounce over wall -> slide in) ----
+  const L17 = {
+    name: "17 · Relay Race",
+    hint: "Three legs: slide the ball off the shelf onto a Trampoline, bounce it over the wall, then ramp it the rest of the way into the ring. Plan the whole machine before you press Run.",
+    goal: { kind: "ring", role: "goalBall", zone: { x: 778, y: 496, w: 84, h: 72 } }, // floor-level ring, right
+    parts: [
+      ...bounds(true),
+      { type: "ball", x: 110, y: 80, role: "goalBall", editable: false },
+      { type: "block", x: 175, y: 250, w: 250, h: 18, editable: false }, // start shelf: x50..300, top y241
+      { type: "block", x: 520, y: 486, w: 40, h: 180, editable: false }, // low wall: x500..540, top y396
+    ],
+    inventory: { trampoline: 1, ramp: 5 },
+  };
+
+  // ---- Level 18: Switchback Relay (multi-step: slide -> bounce over wall -> long slide to far ring) ----
+  const L18 = {
+    name: "18 · Switchback Relay",
+    hint: "Same plan, longer machine, tighter budget. Slide off the shelf onto a Trampoline, bounce over the wall, then build a ramp run all the way across to the ring in the far corner.",
+    goal: { kind: "ring", role: "goalBall", zone: { x: 820, y: 496, w: 84, h: 72 } },
+    parts: [
+      ...bounds(true),
+      { type: "ball", x: 110, y: 80, role: "goalBall", editable: false },
+      { type: "block", x: 175, y: 250, w: 250, h: 18, editable: false }, // start shelf x50..300 top y241
+      { type: "block", x: 470, y: 486, w: 40, h: 180, editable: false }, // wall x450..490 top y396
+    ],
+    inventory: { trampoline: 1, ramp: 5 },
+  };
+
   // ---- Sandbox ----
   const SB = {
     name: "★ Sandbox",
@@ -298,5 +326,5 @@ const BOARD_W = 960, BOARD_H = 600, FLOOR_TOP = 566;
       cannon: 3, spinner: 3, domino: 8, crate: 5, bumper: 5, block: 6 },
   };
 
-  window.LEVELS = [L1, L2, L3, L4, L5, L6, L7, L8, L9, L10, L11, L12, L13, L14, L15, L16, SB];
+  window.LEVELS = [L1, L2, L3, L4, L5, L6, L7, L8, L9, L10, L11, L12, L13, L14, L15, L16, L17, L18, SB];
 })();
