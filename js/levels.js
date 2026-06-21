@@ -253,17 +253,19 @@ const BOARD_W = 960, BOARD_H = 600, FLOOR_TOP = 566;
     inventory: { cannon: 1, trampoline: 1, conveyor: 1, ramp: 2 },
   };
 
-  // ---- Level 15: The Gauntlet (hardest — high-far ring beyond cannon range; needs cannon + trampoline) ----
+  // ---- Level 15: The Long Haul (hardest — build a long slide past a wall to a far hoop) ----
+  const b15 = basket(872);
   const L15 = {
-    name: "15 · The Gauntlet",
-    hint: "The ring hangs high on the right, out of cannon range — a cannon flies high OR far, never both. Clear the wall, drop the ball onto a Trampoline on the far side, and loft it up through the ring.",
-    goal: { kind: "ring", role: "goalBall", zone: { x: 808, y: 82, w: 88, h: 86 } }, // center ~(852,125)
+    name: "15 · The Long Haul",
+    hint: "The hoop's all the way over there, with a wall in the way. Build one long slide of Planks — weave the ball down, under the wall, and all the way across into the hoop. It takes the whole bin.",
+    goal: { kind: "basket", role: "goalBall", zone: b15.zone },
     parts: [
       ...bounds(true),
-      { type: "ball", x: 80, y: 110, role: "goalBall", editable: false },
-      { type: "block", x: 340, y: 440, w: 40, h: 260, editable: false },  // wall 1, top y310 — cannon over
+      ...b15.walls,
+      { type: "ball", x: 80, y: 70, role: "goalBall", editable: false },
+      { type: "block", x: 620, y: 205, w: 40, h: 360, editable: false },  // wall x600..640, y25..385 (floor gap below)
     ],
-    inventory: { cannon: 1, trampoline: 1, ramp: 3, bumper: 1 },
+    inventory: { ramp: 8, trampoline: 1, conveyor: 1, bumper: 1 },
   };
 
   // ---- Sandbox ----
