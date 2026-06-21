@@ -316,6 +316,23 @@ const BOARD_W = 960, BOARD_H = 600, FLOOR_TOP = 566;
     inventory: { trampoline: 1, ramp: 5 },
   };
 
+  // ---- Level 19: The Full Circuit (trickier multi-step: slide -> trampoline over wall -> bridge a gap -> through a raised ring) ----
+  const L19 = {
+    name: "19 · The Full Circuit",
+    hint: "The trickiest yet. Slide off the shelf onto a Trampoline, vault the wall onto the platform — then there's a GAP, and the ring is up at platform height (fall in the gap and you're done). Bridge it with the Conveyor and run the ball across and through.",
+    goal: { kind: "ring", role: "goalBall", zone: { x: 838, y: 396, w: 84, h: 74 } }, // ring at PLATFORM height, far right
+    parts: [
+      ...bounds(true),
+      { type: "ball", x: 110, y: 80, role: "goalBall", editable: false },
+      { type: "block", x: 175, y: 250, w: 250, h: 18, editable: false }, // start shelf x50..300 top y241
+      { type: "block", x: 440, y: 486, w: 40, h: 180, editable: false }, // wall x420..460 top y396
+      { type: "block", x: 610, y: 458, w: 230, h: 18, editable: false }, // catch platform x495..725 top y449
+      { type: "block", x: 900, y: 458, w: 130, h: 18, editable: false }, // ring platform x835..965 top y449 (gap x725..835)
+    ],
+    inventory: { trampoline: 1, conveyor: 1, ramp: 4 },
+  };
+  L19.goal.zone = { x: 846, y: 396, w: 84, h: 74 }; // ring on the ring platform
+
   // ---- Sandbox ----
   const SB = {
     name: "★ Sandbox",
@@ -326,5 +343,5 @@ const BOARD_W = 960, BOARD_H = 600, FLOOR_TOP = 566;
       cannon: 3, spinner: 3, domino: 8, crate: 5, bumper: 5, block: 6 },
   };
 
-  window.LEVELS = [L1, L2, L3, L4, L5, L6, L7, L8, L9, L10, L11, L12, L13, L14, L15, L16, L17, L18, SB];
+  window.LEVELS = [L1, L2, L3, L4, L5, L6, L7, L8, L9, L10, L11, L12, L13, L14, L15, L16, L17, L18, L19, SB];
 })();
