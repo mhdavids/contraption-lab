@@ -1,0 +1,205 @@
+/* ============================================================
+   Contraption Lab — levels.js
+   Board is 960 x 600 logical units. (0,0) top-left.
+   A level is fixed geometry + a fixed goal part + a parts-bin inventory.
+   ============================================================ */
+
+const BOARD_W = 960, BOARD_H = 600, FLOOR_TOP = 566;
+
+(function () {
+  // ---- geometry helpers ----
+  const wall = (x, y, w, h) => ({ type: "block", x, y, w, h, editable: false });
+
+  function bounds(ceiling) {
+    const b = [
+      wall(BOARD_W / 2, FLOOR_TOP + 60, BOARD_W + 200, 120), // floor: top edge at FLOOR_TOP
+      wall(-30, BOARD_H / 2, 60, BOARD_H + 200),             // left: inner edge at x=0
+      wall(BOARD_W + 30, BOARD_H / 2, 60, BOARD_H + 200),    // right: inner edge at x=960
+    ];
+    if (ceiling) b.push(wall(BOARD_W / 2, -30, BOARD_W + 200, 60)); // ceiling: inner edge y=0
+    return b;
+  }
+
+  // open-top "cup" the ball drops into; side posts are hidden (the basket art stands in)
+  function basket(cx, topY = FLOOR_TOP) {
+    return {
+      walls: [
+        { type: "block", x: cx - 36, y: topY - 28, w: 12, h: 56, editable: false, hidden: true },
+        { type: "block", x: cx + 36, y: topY - 28, w: 12, h: 56, editable: false, hidden: true },
+      ],
+      zone: { x: cx - 30, y: topY - 52, w: 60, h: 50 },
+    };
+  }
+
+  // ---- Level 1: First Drop ----
+  const b1 = basket(480);
+  const L1 = {
+    name: "1 · First Drop",
+    hint: "Drop the basketball into the hoop. Drag a Plank under the ball and angle it so the ball rolls right and drops in.",
+    goal: { kind: "basket", role: "goalBall", zone: b1.zone },
+    parts: [
+      ...bounds(false),
+      ...b1.walls,
+      { type: "ball", x: 168, y: 108, role: "goalBall", editable: false },
+    ],
+    inventory: { ramp: 3 },
+  };
+
+  // ---- Level 2: Mind the Gap ----
+  const b2 = basket(792);
+  const L2 = {
+    name: "2 · Mind the Gap",
+    hint: "The ball rolls off the shelf into thin air. Bridge the gap with Planks so it reaches the hoop.",
+    goal: { kind: "basket", role: "goalBall", zone: b2.zone },
+    parts: [
+      ...bounds(false),
+      ...b2.walls,
+      // starting shelf, tilted so the ball rolls off to the right
+      { type: "ramp", x: 165, y: 230, w: 240, h: 18, angle: 0.16, editable: false },
+      { type: "ball", x: 95, y: 188, role: "goalBall", editable: false },
+      // a pillar in the way to make placement matter
+      { type: "block", x: 470, y: 470, w: 40, h: 200, editable: false },
+    ],
+    inventory: { ramp: 3, trampoline: 1 },
+  };
+
+  // ---- Level 3: Catch the Wind ----
+  const b3 = basket(150);
+  const L3 = {
+    name: "3 · Catch the Wind",
+    hint: "The hoop is back to the LEFT and up high. Use the Fan's updraft (and Planks) to push the ball up and over.",
+    goal: { kind: "basket", role: "goalBall", zone: { x: b3.zone.x, y: 250, w: 60, h: 50 } },
+    parts: [
+      ...bounds(true),
+      // raised basket on a shelf, top-left
+      { type: "block", x: 150, y: 330, w: 200, h: 24, editable: false },
+      { type: "block", x: 114, y: 300, w: 12, h: 56, editable: false, hidden: true },
+      { type: "block", x: 186, y: 300, w: 12, h: 56, editable: false, hidden: true },
+      // ball starts mid-right, will fall straight down
+      { type: "ball", x: 640, y: 120, role: "goalBall", editable: false },
+    ],
+    inventory: { fan: 1, ramp: 3 },
+  };
+  L3.goal.zone = { x: 120, y: 248, w: 60, h: 52 };
+
+  // ---- Level 4: Light as Air ----  (goal part is the balloon; steer it into a floating ring)
+  const L4 = {
+    name: "4 · Light as Air",
+    hint: "This time the BALLOON is your prize — it floats up on its own. Angle Planks to steer it right and up into the glowing ring.",
+    goal: { kind: "ring", role: "goalBall", zone: { x: 698, y: 12, w: 88, h: 104 } },
+    parts: [
+      ...bounds(true),
+      { type: "balloon", x: 250, y: 500, role: "goalBall", editable: false },
+      // a divider that makes the balloon drift the wrong way unless guided
+      { type: "block", x: 540, y: 220, w: 40, h: 300, editable: false },
+    ],
+    inventory: { ramp: 4, fan: 1 },
+  };
+
+  // ---- Level 5: Conveyor Caper ----
+  const b5 = basket(820);
+  const L5 = {
+    name: "5 · Conveyor Caper",
+    hint: "Bounce the ball off a Trampoline onto a Conveyor and ride it to the hoop. Combine everything you've learned!",
+    goal: { kind: "basket", role: "goalBall", zone: b5.zone },
+    parts: [
+      ...bounds(false),
+      ...b5.walls,
+      { type: "ball", x: 130, y: 100, role: "goalBall", editable: false },
+      // a low wall the ball must get over
+      { type: "block", x: 470, y: 506, w: 40, h: 130, editable: false },
+    ],
+    inventory: { trampoline: 1, conveyor: 2, ramp: 2, fan: 1 },
+  };
+
+  // ---- Level 6: Pinball Drop (bumper) ----
+  const b6 = basket(480);
+  const L6 = {
+    name: "6 · Pinball Drop",
+    hint: "Pinball time! The ball drops from up top. Place Bumpers (bouncy!) and Planks to ricochet it into the hoop.",
+    goal: { kind: "basket", role: "goalBall", zone: b6.zone },
+    parts: [
+      ...bounds(true),
+      ...b6.walls,
+      { type: "ball", x: 150, y: 86, role: "goalBall", editable: false },
+      // a shelf right over the hoop, so a straight drop won't work
+      { type: "block", x: 480, y: 250, w: 150, h: 20, editable: false },
+    ],
+    inventory: { bumper: 3, ramp: 3 },
+  };
+
+  // ---- Level 7: Cannonball (cannon) ----
+  const b7 = basket(824);
+  const L7 = {
+    name: "7 · Cannonball",
+    hint: "A tall wall guards the hoop. Roll the ball into a Cannon and aim it (rotate!) so it arcs over the wall.",
+    goal: { kind: "basket", role: "goalBall", zone: b7.zone },
+    parts: [
+      ...bounds(false),
+      ...b7.walls,
+      { type: "ball", x: 120, y: 90, role: "goalBall", editable: false },
+      { type: "block", x: 560, y: 436, w: 40, h: 280, editable: false }, // wall, top ~y296
+    ],
+    inventory: { cannon: 1, ramp: 3 },
+  };
+
+  // ---- Level 8: Battering Ram (crate) ----
+  const b8 = basket(626);
+  const L8 = {
+    name: "8 · Battering Ram",
+    hint: "The ball is stuck on the shelf. Build a ramp so a dropped Crate slides down and rams it off the edge into the hoop.",
+    goal: { kind: "basket", role: "goalBall", zone: b8.zone },
+    parts: [
+      ...bounds(false),
+      ...b8.walls,
+      // shelf (top ~y320) holding the ball near its right edge
+      { type: "block", x: 322, y: 332, w: 384, h: 24, editable: false }, // x130..514
+      { type: "ball", x: 486, y: 300, role: "goalBall", editable: false },
+    ],
+    inventory: { crate: 1, ramp: 3 },
+  };
+
+  // ---- Level 9: The Mixer (spinner) ----
+  const b9 = basket(810);
+  const L9 = {
+    name: "9 · The Mixer",
+    hint: "That motorized paddle never stops spinning. Feed the ball into it with Planks and let it bat the ball across.",
+    goal: { kind: "basket", role: "goalBall", zone: b9.zone },
+    parts: [
+      ...bounds(false),
+      ...b9.walls,
+      { type: "ball", x: 120, y: 88, role: "goalBall", editable: false },
+      { type: "spinner", x: 430, y: 360, editable: false },
+      { type: "block", x: 630, y: 476, w: 40, h: 190, editable: false },
+    ],
+    inventory: { ramp: 4, bumper: 1 },
+  };
+
+  // ---- Level 10: Grand Contraption (capstone) ----
+  const b10 = basket(842);
+  const L10 = {
+    name: "10 · Grand Contraption",
+    hint: "The big one. Everything's on the table — chain it all together and sink the ball.",
+    goal: { kind: "basket", role: "goalBall", zone: b10.zone },
+    parts: [
+      ...bounds(true),
+      ...b10.walls,
+      { type: "ball", x: 108, y: 88, role: "goalBall", editable: false },
+      { type: "block", x: 460, y: 304, w: 40, h: 240, editable: false },
+      { type: "block", x: 690, y: 480, w: 40, h: 180, editable: false },
+    ],
+    inventory: { ramp: 4, cannon: 1, conveyor: 1, fan: 1, bumper: 2, trampoline: 1, seesaw: 1 },
+  };
+
+  // ---- Sandbox ----
+  const SB = {
+    name: "★ Sandbox",
+    hint: "Free build — no goal, just tinker. Everything is unlimited-ish. Drop balls and watch the chaos.",
+    goal: null,
+    parts: [...bounds(true)],
+    inventory: { ball: 6, ramp: 8, seesaw: 4, fan: 4, balloon: 4, conveyor: 4, trampoline: 4,
+      cannon: 3, spinner: 3, domino: 8, crate: 5, bumper: 5, block: 6 },
+  };
+
+  window.LEVELS = [L1, L2, L3, L4, L5, L6, L7, L8, L9, L10, SB];
+})();

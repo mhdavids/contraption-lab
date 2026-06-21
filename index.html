@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
+  <title>Contraption Lab — a marvelous machine puzzler</title>
+  <link rel="stylesheet" href="style.css" />
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'><text y='14' font-size='14'>⚙️</text></svg>" />
+</head>
+<body>
+  <div id="app">
+    <header id="topbar">
+      <div class="brand">
+        <span class="logo">⚙️</span>
+        <div class="brand-text">
+          <h1>Contraption Lab</h1>
+          <span class="tagline">build a marvelous machine</span>
+        </div>
+      </div>
+
+      <div class="level-info">
+        <div class="level-name" id="levelName">Level</div>
+        <div class="level-hint" id="levelHint">Hint goes here</div>
+      </div>
+
+      <div class="controls">
+        <button id="prevLevel" class="btn btn-ghost" title="Previous level">‹</button>
+        <select id="levelSelect" class="level-select" title="Jump to level"></select>
+        <button id="nextLevel" class="btn btn-ghost" title="Next level">›</button>
+        <button id="resetBtn" class="btn btn-tool" title="Clear the run / reset parts">↺ Reset</button>
+        <button id="runBtn" class="btn btn-run" title="Run the machine (Space)">▶ Run</button>
+      </div>
+    </header>
+
+    <main id="stage">
+      <canvas id="board"></canvas>
+
+      <!-- floating edit toolbar for the selected part -->
+      <div id="editbar" class="editbar hidden">
+        <button data-act="rotL" title="Rotate left (Q)">↺</button>
+        <button data-act="rotR" title="Rotate right (E)">↻</button>
+        <button data-act="del" title="Delete (Del)">🗑</button>
+      </div>
+
+      <div id="winOverlay" class="overlay hidden">
+        <div class="win-card">
+          <div class="win-emoji">🏆</div>
+          <h2 id="winTitle">Solved!</h2>
+          <p id="winSub">The machine works.</p>
+          <div class="win-actions">
+            <button id="replayBtn" class="btn btn-tool">↺ Tinker again</button>
+            <button id="winNextBtn" class="btn btn-run">Next level ›</button>
+          </div>
+        </div>
+      </div>
+    </main>
+
+    <footer id="bin">
+      <div class="bin-label">Parts Bin</div>
+      <div id="binItems" class="bin-items"></div>
+      <div class="bin-tip" id="binTip">Drag a part onto the board. Click a placed part to rotate or delete it.</div>
+    </footer>
+  </div>
+
+  <!-- Rotate-to-landscape hint for narrow portrait phones -->
+  <div id="rotateHint">
+    <div>🔄</div>
+    <p>Rotate your device<br />for more workbench room</p>
+  </div>
+
+  <script src="js/lib/matter.min.js"></script>
+  <script src="js/levels.js"></script>
+  <script src="js/parts.js"></script>
+  <script src="js/main.js"></script>
+</body>
+</html>
