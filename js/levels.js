@@ -191,6 +191,82 @@ const BOARD_W = 960, BOARD_H = 600, FLOOR_TOP = 566;
     inventory: { ramp: 4, cannon: 1, conveyor: 1, fan: 1, bumper: 2, trampoline: 1, seesaw: 1 },
   };
 
+  // ============================================================
+  //  HARDER LEVELS (11-15) — multi-step chains, obstacles, tight parts
+  // ============================================================
+
+  // ---- Level 11: Over the Top (launch over a tall wall) ----
+  const b11 = basket(806);
+  const L11 = {
+    name: "11 · Over the Top",
+    hint: "That wall is too tall to roll around. Feed the ball into a Cannon and aim it up and over — then land it in the hoop on the far side.",
+    goal: { kind: "basket", role: "goalBall", zone: b11.zone },
+    parts: [
+      ...bounds(true),
+      ...b11.walls,
+      { type: "ball", x: 120, y: 120, role: "goalBall", editable: false },
+      { type: "block", x: 470, y: 440, w: 46, h: 260, editable: false }, // wall, top ~y310 (clearable by a flat cannon arc, too tall to roll over)
+    ],
+    inventory: { cannon: 1, ramp: 3, trampoline: 1 },
+  };
+
+  // ---- Level 12: Bank Shot (roll under a wall, bank into a low ring) ----
+  const L12 = {
+    name: "12 · Bank Shot",
+    hint: "A wall guards the ring with no straight line in. Roll the ball under the wall, then bank it off Bumpers to steer it into the ring.",
+    goal: { kind: "ring", role: "goalBall", zone: { x: 772, y: 424, w: 86, h: 86 } }, // low-right, open
+    parts: [
+      ...bounds(true),
+      { type: "ball", x: 120, y: 104, role: "goalBall", editable: false },
+      // tall wall with a gap UNDER it (top y105 down to y465; floor gap below)
+      { type: "block", x: 566, y: 285, w: 40, h: 360, editable: false },
+    ],
+    inventory: { bumper: 3, ramp: 3 },
+  };
+
+  // ---- Level 13: Sky Hook (trampoline bounce up to a high ring) ----
+  const L13 = {
+    name: "13 · Sky Hook",
+    hint: "The ring floats up high with clear air beneath it. Drop the ball onto a Trampoline placed right below the ring and launch it straight up through — the higher the drop, the higher the bounce.",
+    goal: { kind: "ring", role: "goalBall", zone: { x: 556, y: 190, w: 92, h: 98 } }, // center ~(602,239)
+    parts: [
+      ...bounds(true),
+      { type: "ball", x: 110, y: 90, role: "goalBall", editable: false },
+    ],
+    inventory: { trampoline: 1, ramp: 3, bumper: 1 },
+  };
+
+  // ---- Level 14: Relay (launch + bounce + carry, 3-stage chain) ----
+  const b14 = basket(852);
+  const L14 = {
+    name: "14 · Relay",
+    hint: "A real relay: launch the ball over the wall, then catch and carry it the rest of the way. One Cannon, one Trampoline, one Conveyor — chain them.",
+    goal: { kind: "basket", role: "goalBall", zone: b14.zone },
+    parts: [
+      ...bounds(true),
+      ...b14.walls,
+      { type: "ball", x: 110, y: 110, role: "goalBall", editable: false },
+      { type: "block", x: 470, y: 440, w: 44, h: 260, editable: false }, // divider, top ~y310
+      // a pit lip so the ball can't just roll along the floor on the far side
+      { type: "block", x: 690, y: 506, w: 40, h: 130, editable: false },
+    ],
+    inventory: { cannon: 1, trampoline: 1, conveyor: 1, ramp: 2 },
+  };
+
+  // ---- Level 15: The Gauntlet (hardest — clear the wall, then bounce up to the ring) ----
+  const L15 = {
+    name: "15 · The Gauntlet",
+    hint: "The final test, tightest toolbox. Launch the ball over the wall, then bounce it up to the ring in the rafters — Cannon up and over, Trampoline up and in.",
+    goal: { kind: "ring", role: "goalBall", zone: { x: 778, y: 188, w: 92, h: 92 } }, // upper-right, center ~(824,234)
+    parts: [
+      ...bounds(true),
+      { type: "ball", x: 110, y: 110, role: "goalBall", editable: false },
+      { type: "block", x: 460, y: 440, w: 42, h: 260, editable: false },  // central wall, top ~y310
+      { type: "block", x: 742, y: 452, w: 40, h: 240, editable: false },  // wall just left of/under the ring, y332..572
+    ],
+    inventory: { cannon: 1, trampoline: 1, bumper: 2, ramp: 3 },
+  };
+
   // ---- Sandbox ----
   const SB = {
     name: "★ Sandbox",
@@ -201,5 +277,5 @@ const BOARD_W = 960, BOARD_H = 600, FLOOR_TOP = 566;
       cannon: 3, spinner: 3, domino: 8, crate: 5, bumper: 5, block: 6 },
   };
 
-  window.LEVELS = [L1, L2, L3, L4, L5, L6, L7, L8, L9, L10, SB];
+  window.LEVELS = [L1, L2, L3, L4, L5, L6, L7, L8, L9, L10, L11, L12, L13, L14, L15, SB];
 })();

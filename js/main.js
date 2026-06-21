@@ -271,7 +271,7 @@
     const z = g.zone;
     const inside = b.position.x > z.x && b.position.x < z.x + z.w &&
                    b.position.y > z.y && b.position.y < z.y + z.h;
-    const need = g.kind === "ring" ? 6 : 12;
+    const need = g.kind === "ring" ? 4 : 12; // rings: fewer frames so a fast ball passing through still counts
     if (inside) { if (++winFrames >= need) doWin(); }
     else winFrames = 0;
   }
