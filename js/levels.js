@@ -253,18 +253,17 @@ const BOARD_W = 960, BOARD_H = 600, FLOOR_TOP = 566;
     inventory: { cannon: 1, trampoline: 1, conveyor: 1, ramp: 2 },
   };
 
-  // ---- Level 15: The Gauntlet (hardest — clear the wall, then bounce up to the ring) ----
+  // ---- Level 15: The Gauntlet (hardest — high-far ring beyond cannon range; needs cannon + trampoline) ----
   const L15 = {
     name: "15 · The Gauntlet",
-    hint: "The final test, tightest toolbox. Launch the ball over the wall, then bounce it up to the ring in the rafters — Cannon up and over, Trampoline up and in.",
-    goal: { kind: "ring", role: "goalBall", zone: { x: 778, y: 188, w: 92, h: 92 } }, // upper-right, center ~(824,234)
+    hint: "The ring hangs high on the right, out of cannon range — a cannon flies high OR far, never both. Clear the wall, drop the ball onto a Trampoline on the far side, and loft it up through the ring.",
+    goal: { kind: "ring", role: "goalBall", zone: { x: 808, y: 82, w: 88, h: 86 } }, // center ~(852,125)
     parts: [
       ...bounds(true),
-      { type: "ball", x: 110, y: 110, role: "goalBall", editable: false },
-      { type: "block", x: 460, y: 440, w: 42, h: 260, editable: false },  // central wall, top ~y310
-      { type: "block", x: 742, y: 452, w: 40, h: 240, editable: false },  // wall just left of/under the ring, y332..572
+      { type: "ball", x: 80, y: 110, role: "goalBall", editable: false },
+      { type: "block", x: 340, y: 440, w: 40, h: 260, editable: false },  // wall 1, top y310 — cannon over
     ],
-    inventory: { cannon: 1, trampoline: 1, bumper: 2, ramp: 3 },
+    inventory: { cannon: 1, trampoline: 1, ramp: 3, bumper: 1 },
   };
 
   // ---- Sandbox ----
