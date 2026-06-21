@@ -99,7 +99,9 @@ function createBodies(part) {
     case "cannon":
     case "trampoline": {
       const opts = { isStatic: true, angle: ang, label: part.type };
-      if (part.type === "trampoline") { opts.restitution = 0.92; opts.friction = 0.2; }
+      // NOTE: Matter zeroes restitution on static bodies, so the trampoline's
+      // bounce is applied by hand in main.js applyForces(), not via restitution here.
+      if (part.type === "trampoline") { opts.friction = 0.2; }
       else if (part.type === "ramp") opts.friction = 0.14;
       else if (part.type === "block") opts.friction = 0.5;
       else opts.friction = 0.4;

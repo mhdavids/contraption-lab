@@ -15,6 +15,11 @@
   const CANNON_SPEED = 15;    // launch velocity (px/step)
   const CANNON_REACH = 48;    // muzzle capture depth
   const SPIN_SPEED = 0.06;    // spinner angular velocity (rad/step)
+  // Matter zeroes restitution on STATIC bodies, so trampoline/bumper bounce is done by hand:
+  const TRAMP_BOUNCE = 0.95;  // trampoline elasticity (fraction of impact speed returned)
+  const TRAMP_MIN_HIT = 2;    // ignore contacts slower than this (lets a ball settle)
+  const BUMPER_BOUNCE = 0.8;  // bumper elasticity
+  const BUMPER_MIN_POP = 6;   // bumper minimum outward kick (px/step)
 
   // ---------- DOM ----------
   const canvas = document.getElementById("board");
@@ -215,6 +220,38 @@
         }
       } else if (p.type === "spinner") {
         Body.setAngularVelocity(p.body, (p.spin || 1) * SPIN_SPEED);
+      } else if (p.type === "trampoline") {
+        const ca = Math.cos(p.body.angle), sa = Math.sin(p.body.angle);
+        const reachTop = -d.h / 2; // mat surface in local frame
+        for (const b of dyn) {
+          const br = b.circleRadius || 16;
+          const lp = worldToLocal(p.body.position.x, p.body.position.y, p.body.angle, b.position.x, b.position.y);
+          if (Math.abs(lp.x) > d.w / 2 + br * 0.4) continue;
+          const lvy = -b.velocity.x * sa + b.velocity.y * ca; // +y local = into the mat
+          const contact = reachTop - br;                       // ball-center y at first touch
+          if (lvy > TRAMP_MIN_HIT && lp.y > contact - (lvy + 6) && lp.y < contact + 14) {
+            const lvx = b.velocity.x * ca + b.velocity.y * sa;
+            const nlvy = -lvy * TRAMP_BOUNCE;                   // reflect upward, springy
+            Body.setVelocity(b, { x: lvx * ca - nlvy * sa, y: lvx * sa + nlvy * ca });
+          }
+        }
+      } else if (p.type === "bumper") {
+        for (const b of dyn) {
+          const br = b.circleRadius || 16;
+          const dx = b.position.x - p.body.position.x, dy = b.position.y - p.body.position.y;
+          const dist = Math.hypot(dx, dy) || 1;
+          const nx = dx / dist, ny = dy / dist;
+          const vn = b.velocity.x * nx + b.velocity.y * ny; // closing if < 0
+          // catch the ball ~1 tick before contact (margin grows with approach speed) so the
+          // pop lands before Matter's inelastic static-collision can cancel it
+          if (vn < -0.5 && dist < d.r + br + 6 - vn) {
+            let vx = b.velocity.x - (1 + BUMPER_BOUNCE) * vn * nx;
+            let vy = b.velocity.y - (1 + BUMPER_BOUNCE) * vn * ny;
+            const out = vx * nx + vy * ny;
+            if (out < BUMPER_MIN_POP) { const a = BUMPER_MIN_POP - out; vx += a * nx; vy += a * ny; }
+            Body.setVelocity(b, { x: vx, y: vy });
+          }
+        }
       }
     }
   }
