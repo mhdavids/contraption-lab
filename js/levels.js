@@ -268,6 +268,26 @@ const BOARD_W = 960, BOARD_H = 600, FLOOR_TOP = 566;
     inventory: { ramp: 8, trampoline: 1, conveyor: 1, bumper: 1 },
   };
 
+  // ---- Level 16: Threading the Needle (brutal — over-constrained precision bounce) ----
+  const b16 = basket(800);
+  const L16 = {
+    name: "16 · Threading the Needle",
+    hint: "Two narrow slots stand between the ball and the hoop. With ONE Trampoline, tilt and place it so a single bounce threads BOTH slots and drops in. Tilt sets the aim; height sets the reach. Millimeters matter.",
+    goal: { kind: "basket", role: "goalBall", zone: b16.zone },
+    parts: [
+      ...bounds(true),
+      ...b16.walls,
+      { type: "ball", x: 150, y: 60, role: "goalBall", editable: false },
+      // slot 1 (threaded on the way down) at x350
+      { type: "block", x: 350, y: 90, w: 34, h: 192, editable: false },   // top x333..367, y-6..186
+      { type: "block", x: 350, y: 417, w: 34, h: 346, editable: false },  // bottom y244..590; slot 1 y186..244 (58px)
+      // slot 2 (threaded on the way down) at x520
+      { type: "block", x: 520, y: 100, w: 36, h: 212, editable: false },  // top  x502..538, y-6..206
+      { type: "block", x: 520, y: 421, w: 36, h: 330, editable: false },  // bottom y256..586; slot 2 y206..256 (50px)
+    ],
+    inventory: { trampoline: 1 },
+  };
+
   // ---- Sandbox ----
   const SB = {
     name: "★ Sandbox",
@@ -278,5 +298,5 @@ const BOARD_W = 960, BOARD_H = 600, FLOOR_TOP = 566;
       cannon: 3, spinner: 3, domino: 8, crate: 5, bumper: 5, block: 6 },
   };
 
-  window.LEVELS = [L1, L2, L3, L4, L5, L6, L7, L8, L9, L10, L11, L12, L13, L14, L15, SB];
+  window.LEVELS = [L1, L2, L3, L4, L5, L6, L7, L8, L9, L10, L11, L12, L13, L14, L15, L16, SB];
 })();
