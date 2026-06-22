@@ -180,6 +180,53 @@ html, body {
 
 .bin-tip { font-size: 11px; color: var(--kraft); opacity: .85; margin-top: 4px; }
 
+/* ---------- Level Designer ---------- */
+#designControls { display: none; }
+body.designing #playControls { display: none; }
+body.designing #designControls { display: flex; }
+#editBtn { display: none; }
+body.testing #editBtn { display: inline-flex; }
+
+/* a designer part placed as fixed geometry gets a dashed selectable tint via canvas;
+   the palette items are unlimited, so hide their count badge */
+.bin-item.palette .count { display: none; }
+.bin-item.palette { background: radial-gradient(circle at 50% 35%, #e7f0d6, #bcd29a); }
+.bin-item.palette.special { background: radial-gradient(circle at 50% 35%, #ffe6c2, #f2c27a); }
+
+/* modal panels (Tools, Share) */
+#invModal, #shareModal { position: fixed; }
+.modal-card {
+  background: linear-gradient(180deg, #fff8e8, var(--paper));
+  border: 3px solid #3c2713; border-radius: 16px;
+  padding: 20px 24px; width: min(460px, 92vw); max-height: 86vh; overflow-y: auto;
+  box-shadow: 0 14px 40px rgba(0,0,0,.5);
+  animation: pop .3s cubic-bezier(.2,1.3,.4,1);
+}
+.modal-card h2 { font-size: 20px; color: var(--wood-dark); margin-bottom: 4px; }
+.modal-sub { font-size: 12.5px; color: #5a4630; margin-bottom: 14px; line-height: 1.35; }
+.modal-actions { display: flex; gap: 10px; justify-content: flex-end; margin-top: 16px; flex-wrap: wrap; }
+
+.inv-list { display: grid; grid-template-columns: 1fr 1fr; gap: 8px 12px; }
+.inv-row {
+  display: flex; align-items: center; justify-content: space-between; gap: 8px;
+  background: rgba(217,185,136,.35); border: 1.5px solid #3c2713;
+  border-radius: 8px; padding: 5px 8px;
+}
+.inv-row .inv-name { font-size: 12.5px; font-weight: 700; color: var(--wood-dark); }
+.inv-stepper { display: flex; align-items: center; gap: 5px; }
+.inv-stepper button {
+  width: 24px; height: 24px; border-radius: 6px; border: 1.5px solid #3c2713;
+  background: #fbeeca; font-weight: 700; font-size: 15px; line-height: 1;
+  cursor: pointer; color: var(--ink);
+}
+.inv-stepper .inv-count { min-width: 18px; text-align: center; font-weight: 700; font-size: 14px; }
+
+.share-text {
+  width: 100%; height: 120px; resize: vertical; font-family: ui-monospace, "SF Mono", monospace;
+  font-size: 11px; border: 2px solid #3c2713; border-radius: 8px; padding: 8px;
+  color: var(--ink); background: #fff8e8; user-select: text; -webkit-user-select: text;
+}
+
 /* ---------- Rotate hint ---------- */
 #rotateHint {
   display: none; position: fixed; inset: 0; z-index: 50;

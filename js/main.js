@@ -34,6 +34,14 @@
   const levelSelect = document.getElementById("levelSelect");
   const binItemsEl = document.getElementById("binItems");
   const binTip = document.getElementById("binTip");
+  const binLabel = document.getElementById("binLabel");
+  // designer DOM
+  const designControls = document.getElementById("designControls");
+  const dGoalKind = document.getElementById("dGoalKind");
+  const invModal = document.getElementById("invModal");
+  const invList = document.getElementById("invList");
+  const shareModal = document.getElementById("shareModal");
+  const shareText = document.getElementById("shareText");
 
   // ---------- state ----------
   let engine = Engine.create();
@@ -53,6 +61,17 @@
   let timeSec = 0, lastT = 0;
   let dpr = 1;
   const binItemEls = {};
+
+  // ---------- designer state ----------
+  let currentLevel = null;     // the level object currently loaded (built-in, custom, or a test build)
+  let designing = false;       // true while editing in the Level Designer
+  let designInv = {};          // the tools the solver will get (type -> count)
+  let designName = "";         // saved name of the current design ("" = unsaved)
+  let goalKind = "ring";       // kind for newly placed / toggled goal markers
+  const CUSTOM_KEY = "cl_custom_levels";
+  const PALETTE = ["ball", "goal", "block", "ramp", "seesaw", "fan", "balloon", "conveyor",
+    "trampoline", "cannon", "spinner", "domino", "crate", "bumper"];
+  const GOAL_SIZE = { ring: { w: 84, h: 84 }, basket: { w: 64, h: 56 } };
 
   // ---------- canvas sizing ----------
   function resize() {
@@ -83,17 +102,19 @@
     return c;
   }
 
-  function loadLevel(idx) {
+  // load ANY level object (built-in, custom, or a designer test build) in play mode
+  function loadLevelObj(lv) {
     stopRun();
-    levelIndex = (idx + LEVELS.length) % LEVELS.length;
-    const lv = LEVELS[levelIndex];
+    currentLevel = lv;
+    designing = false;
+    document.body.classList.remove("designing");
+    binLabel.textContent = "Parts Bin";
     parts = lv.parts.map(clonePart);
-    inventory = Object.assign({}, lv.inventory);
+    inventory = Object.assign({}, lv.inventory || {});
     selectedId = null;
     winFrames = 0;
     levelNameEl.textContent = lv.name;
-    levelHintEl.textContent = lv.hint;
-    levelSelect.value = String(levelIndex);
+    levelHintEl.textContent = lv.hint || "";
     binTip.textContent = lv.goal
       ? "Drag a part onto the board, click it to rotate/delete, then press Run."
       : "Free build — no goal. Drop balls and watch the chaos!";
@@ -102,37 +123,58 @@
     hideWin();
   }
 
-  function currentGoal() { return LEVELS[levelIndex].goal; }
+  function loadLevel(idx) {
+    levelIndex = (idx + LEVELS.length) % LEVELS.length;
+    document.body.classList.remove("testing");
+    loadLevelObj(LEVELS[levelIndex]);
+    levelSelect.value = "b" + levelIndex;
+  }
+
+  function currentGoal() { return currentLevel ? currentLevel.goal : null; }
 
   // ---------- parts bin ----------
+  const ORDER = ["ball", "ramp", "seesaw", "fan", "balloon", "conveyor", "trampoline",
+    "cannon", "spinner", "domino", "crate", "bumper", "block"];
+
+  function makeBinItem(type, label, opts) {
+    const item = document.createElement("div");
+    item.className = "bin-item" + (opts.palette ? " palette" : "") + (opts.special ? " special" : "");
+    const ic = document.createElement("canvas");
+    ic.width = 46; ic.height = 40;
+    if (type === "goal") drawGoalIcon(ic.getContext("2d"));
+    else drawBinIcon(ic.getContext("2d"), type);
+    const name = document.createElement("div");
+    name.className = "bin-name";
+    name.textContent = label;
+    const count = document.createElement("div");
+    count.className = "count";
+    item.appendChild(count);
+    item.appendChild(ic);
+    item.appendChild(name);
+    item.addEventListener("pointerdown", (e) => onBinDown(e, type));
+    binItemsEl.appendChild(item);
+    binItemEls[type] = { el: item, count };
+  }
+
   function buildBin() {
     binItemsEl.innerHTML = "";
     for (const type in binItemEls) delete binItemEls[type];
-    const order = ["ball", "ramp", "seesaw", "fan", "balloon", "conveyor", "trampoline",
-      "cannon", "spinner", "domino", "crate", "bumper", "block"];
-    const types = Object.keys(inventory).sort((a, b) => order.indexOf(a) - order.indexOf(b));
-    for (const type of types) {
-      const item = document.createElement("div");
-      item.className = "bin-item";
-      const ic = document.createElement("canvas");
-      ic.width = 46; ic.height = 40;
-      drawBinIcon(ic.getContext("2d"), type);
-      const name = document.createElement("div");
-      name.className = "bin-name";
-      name.textContent = PART_DEFS[type].label;
-      const count = document.createElement("div");
-      count.className = "count";
-      item.appendChild(count);
-      item.appendChild(ic);
-      item.appendChild(name);
-      item.addEventListener("pointerdown", (e) => onBinDown(e, type));
-      binItemsEl.appendChild(item);
-      binItemEls[type] = { el: item, count };
-    }
+    if (designing) { buildDesignerPalette(); return; }
+    const types = Object.keys(inventory).sort((a, b) => ORDER.indexOf(a) - ORDER.indexOf(b));
+    for (const type of types) makeBinItem(type, PART_DEFS[type].label, {});
     refreshBin();
   }
 
+  function buildDesignerPalette() {
+    for (const type of PALETTE) {
+      const special = type === "ball" || type === "goal";
+      const label = type === "ball" ? "Ball start" : type === "goal" ? "Goal" : PART_DEFS[type].label;
+      makeBinItem(type, label, { palette: true, special });
+    }
+  }
+
   function refreshBin() {
+    if (designing) return;
     for (const type in binItemEls) {
       const n = inventory[type] || 0;
       binItemEls[type].count.textContent = n;
@@ -140,10 +182,21 @@
     }
   }
 
+  function drawGoalIcon(c) {
+    c.save();
+    c.translate(23, 20);
+    c.strokeStyle = "#f2a93b"; c.lineWidth = 4;
+    c.beginPath(); c.arc(0, 0, 13, 0, PI2); c.stroke();
+    c.strokeStyle = "rgba(255,255,255,.6)"; c.lineWidth = 1.5;
+    c.beginPath(); c.arc(0, 0, 8, 0, PI2); c.stroke();
+    c.restore();
+  }
+
   // ---------- physics bodies ----------
   function buildBodies() {
     Composite.clear(engine.world, false);
     for (const p of parts) {
+      if (p.type === "goal") continue; // designer marker only; never simulated
       if (p.type === "cannon") p._fired = new Set(); // re-arm each run
       const made = createBodies(p);
       if (made.bodies.length) Composite.add(engine.world, made.bodies);
@@ -157,7 +210,7 @@
 
   // ---------- run control ----------
   function startRun() {
-    if (mode !== "build") return;
+    if (mode !== "build" || designing) return; // designer uses Test, not Run
     selectedId = null;
     hideEditbar();
     buildBodies();
@@ -279,12 +332,21 @@
     mode = "won";
     runBtn.textContent = "▶ Run";
     runBtn.classList.remove("running");
+    const testing = document.body.classList.contains("testing");
+    const isCustom = currentLevel && currentLevel.custom;
     document.getElementById("winTitle").textContent =
-      levelIndex >= LEVELS.length - 2 ? "Brilliant!" : "Solved!";
+      testing ? "It works! ✓" : (!isCustom && levelIndex >= LEVELS.length - 2 ? "Brilliant!" : "Solved!");
     document.getElementById("winSub").textContent =
-      "Your contraption works. " + (currentGoal().kind === "ring" ? "Right on target." : "Nothing but net.");
+      testing ? "Your level is solvable — it can be beaten."
+              : "Your contraption works. " + (currentGoal().kind === "ring" ? "Right on target." : "Nothing but net.");
     const nextBtn = document.getElementById("winNextBtn");
-    nextBtn.style.display = levelIndex >= LEVELS.length - 1 ? "none" : "";
+    if (testing) {
+      nextBtn.textContent = "✎ Back to editing";
+      nextBtn.style.display = "";
+    } else {
+      nextBtn.textContent = "Next level ›";
+      nextBtn.style.display = (!isCustom && levelIndex >= LEVELS.length - 1) ? "none" : "";
+    }
     winOverlay.classList.remove("hidden");
   }
 
@@ -317,18 +379,44 @@
       let x, y, ang;
       if (mode !== "build" && p.body) { x = p.body.position.x; y = p.body.position.y; ang = p.body.angle; }
       else { x = p.x; y = p.y; ang = p.angle || 0; }
+      if (p.type === "goal") { drawDesignGoal(p); continue; }
       drawPart(ctx, p, x, y, ang, timeSec, p.id === selectedId && mode === "build");
+      if (designing && p.type === "ball" && p.role === "goalBall") drawStartTag(p);
     }
 
     // ghost while dragging a new part from the bin
     if (drag && drag.mode === "bin" && pointer.onCanvas) {
       ctx.globalAlpha = 0.6;
-      const ghost = { type: drag.type, dir: 1 };
-      drawPart(ctx, ghost, pointer.lx, pointer.ly, 0, timeSec, false);
+      if (drag.type === "goal") {
+        const s = GOAL_SIZE[goalKind];
+        drawDesignGoal({ kind: goalKind, x: pointer.lx, y: pointer.ly, w: s.w, h: s.h, id: -1 });
+      } else {
+        drawPart(ctx, { type: drag.type, dir: 1 }, pointer.lx, pointer.ly, 0, timeSec, false);
+      }
       ctx.globalAlpha = 1;
     }
 
     updateEditbar();
+  }
+
+  // designer goal marker + ball-start tag
+  function goalZoneOf(p) { return { x: p.x - p.w / 2, y: p.y - p.h / 2, w: p.w, h: p.h }; }
+  function drawDesignGoal(p) {
+    const z = goalZoneOf(p);
+    if (p.kind === "basket") drawBasketGoal(z); else drawRingGoal(z);
+    if (p.id === selectedId && mode === "build") {
+      ctx.save();
+      ctx.strokeStyle = "#1f6feb"; ctx.lineWidth = 2; ctx.setLineDash([6, 4]);
+      ctx.strokeRect(z.x - 4, z.y - 4, z.w + 8, z.h + 8);
+      ctx.restore();
+    }
+  }
+  function drawStartTag(p) {
+    ctx.save();
+    ctx.fillStyle = "rgba(44,33,24,.85)";
+    ctx.font = "bold 10px Trebuchet MS, sans-serif"; ctx.textAlign = "center";
+    ctx.fillText("START", p.x, p.y - 24);
+    ctx.restore();
   }
 
   function drawBackground() {
@@ -417,6 +505,9 @@
 
   // ---------- hit testing ----------
   function pointInPart(p, lx, ly) {
+    if (p.type === "goal") { // design-only marker; use its stored box
+      return Math.abs(lx - p.x) <= p.w / 2 + 6 && Math.abs(ly - p.y) <= p.h / 2 + 6;
+    }
     const d = dims(p);
     if (p.type === "ball" || p.type === "balloon" || p.type === "bumper") {
       return Math.hypot(lx - p.x, ly - p.y) <= d.r + 6;
@@ -445,7 +536,7 @@
 
   function onBinDown(e, type) {
     if (mode !== "build") return;
-    if ((inventory[type] || 0) <= 0) return;
+    if (!designing && (inventory[type] || 0) <= 0) return; // palette is unlimited
     drag = { mode: "bin", type };
     setPointer(e);
     e.preventDefault();
@@ -476,15 +567,35 @@
   window.addEventListener("pointerup", (e) => {
     if (!drag) return;
     setPointer(e);
-    if (drag.mode === "bin" && pointer.onCanvas && (inventory[drag.type] || 0) > 0) {
-      const p = clonePart({ type: drag.type, x: clampX(pointer.lx), y: clampY(pointer.ly), editable: true });
-      parts.push(p);
-      inventory[drag.type]--;
-      selectedId = p.id;
-      refreshBin();
+    if (drag.mode === "bin" && pointer.onCanvas) {
+      if (designing) placeDesignPart(drag.type, clampX(pointer.lx), clampY(pointer.ly));
+      else if ((inventory[drag.type] || 0) > 0) {
+        const p = clonePart({ type: drag.type, x: clampX(pointer.lx), y: clampY(pointer.ly), editable: true });
+        parts.push(p);
+        inventory[drag.type]--;
+        selectedId = p.id;
+        refreshBin();
+      }
     }
     drag = null;
   });
+
+  // place a part while designing (Ball start & Goal are singletons; everything else is fixed geometry)
+  function placeDesignPart(type, x, y) {
+    if (type === "ball") {
+      parts = parts.filter((p) => !(p.type === "ball" && p.role === "goalBall"));
+      const p = clonePart({ type: "ball", x, y, role: "goalBall", editable: true });
+      parts.push(p); selectedId = p.id;
+    } else if (type === "goal") {
+      parts = parts.filter((p) => p.type !== "goal");
+      const s = GOAL_SIZE[goalKind];
+      const p = clonePart({ type: "goal", kind: goalKind, x, y, w: s.w, h: s.h, editable: true });
+      parts.push(p); selectedId = p.id;
+    } else {
+      const p = clonePart({ type, x, y, editable: true });
+      parts.push(p); selectedId = p.id;
+    }
+  }
 
   // ---------- edit actions ----------
   function rotateSelected(dir) {
@@ -496,7 +607,7 @@
     const sel = selectedPart();
     if (!sel) return;
     parts = parts.filter((p) => p.id !== sel.id);
-    if (inventory[sel.type] !== undefined) inventory[sel.type]++;
+    if (!designing && inventory[sel.type] !== undefined) inventory[sel.type]++;
     selectedId = null;
     refreshBin();
     hideEditbar();
@@ -513,31 +624,283 @@
 
   // ---------- keyboard ----------
   window.addEventListener("keydown", (e) => {
-    if (e.target.tagName === "SELECT") return;
-    if (e.code === "Space") { e.preventDefault(); toggleRun(); }
+    if (e.target.tagName === "SELECT" || e.target.tagName === "TEXTAREA") return;
+    if (!invModal.classList.contains("hidden") || !shareModal.classList.contains("hidden")) {
+      if (e.key === "Escape") { invModal.classList.add("hidden"); shareModal.classList.add("hidden"); }
+      return;
+    }
+    if (e.code === "Space") { e.preventDefault(); if (designing) testDesign(); else toggleRun(); }
     else if (e.key === "q" || e.key === "Q") rotateSelected(-1);
     else if (e.key === "e" || e.key === "E" || e.key === "r" || e.key === "R") rotateSelected(1);
     else if (e.key === "Delete" || e.key === "Backspace") { e.preventDefault(); deleteSelected(); }
     else if (e.key === "Escape") { selectedId = null; hideEditbar(); }
   });
 
+  // ============================================================
+  //  LEVEL DESIGNER
+  // ============================================================
+
+  // ---- custom-level storage (localStorage) ----
+  function loadCustomStore() {
+    try { return JSON.parse(localStorage.getItem(CUSTOM_KEY)) || {}; }
+    catch (_) { return {}; }
+  }
+  function saveCustomStore(store) {
+    try { localStorage.setItem(CUSTOM_KEY, JSON.stringify(store)); } catch (_) {}
+  }
+
+  // ---- enter / exit ----
+  function enterDesigner(seed) {
+    stopRun();
+    designing = true;
+    currentLevel = null;
+    levelIndex = -1;
+    document.body.classList.remove("testing");
+    document.body.classList.add("designing");
+    selectedId = null;
+    winFrames = 0;
+    if (seed) {
+      // rebuild an editable design from a level object (board-edges stay fixed)
+      parts = seed.parts.map((p) => { const c = clonePart(p); c.editable = !p.bound; return c; });
+      if (seed.goal) {
+        const z = seed.goal.zone;
+        parts.push(clonePart({ type: "goal", kind: seed.goal.kind, x: z.x + z.w / 2, y: z.y + z.h / 2, w: z.w, h: z.h, editable: true }));
+        goalKind = seed.goal.kind;
+      }
+      designInv = Object.assign({}, seed.inventory || {});
+      designName = seed.custom ? seed.name : (seed._designName || "");
+    } else {
+      // blank board: floor + walls (fixed) + a Ball start + a Ring goal
+      parts = window.makeBounds(true).map((p) => clonePart(p));
+      parts.push(clonePart({ type: "ball", x: 120, y: 90, role: "goalBall", editable: true }));
+      goalKind = "ring";
+      const s = GOAL_SIZE.ring;
+      parts.push(clonePart({ type: "goal", kind: "ring", x: 820, y: 470, w: s.w, h: s.h, editable: true }));
+      designInv = { ramp: 5, trampoline: 1 };
+      designName = "";
+    }
+    levelNameEl.textContent = "✎ Level Designer" + (designName ? " — " + designName : "");
+    levelHintEl.textContent = "Drag walls & parts onto the board as fixed obstacles, set the Ball start and the Goal, pick the solver's Tools, then ▶ Test.";
+    binLabel.textContent = "Designer Palette — place fixed geometry, the Ball start & the Goal";
+    binTip.textContent = "Place blocks/parts as immovable obstacles. The Ball & Goal are single — drag again to move them.";
+    updateGoalKindBtn();
+    buildBin();
+    hideEditbar();
+    hideWin();
+  }
+
+  function exitDesigner() {
+    designing = false;
+    document.body.classList.remove("designing", "testing");
+    loadLevel(0);
+  }
+
+  // ---- build a playable level object from the current design ----
+  function buildLevelFromDesign(name) {
+    const geom = parts.filter((p) => p.type !== "goal" && !(p.type === "ball" && p.role === "goalBall"));
+    const levelParts = geom.map((p) => {
+      const c = { type: p.type, x: p.x, y: p.y, editable: false };
+      if (p.w !== undefined) c.w = p.w;
+      if (p.h !== undefined) c.h = p.h;
+      if (p.angle) c.angle = p.angle;
+      if (p.dir !== undefined) c.dir = p.dir;
+      if (p.spin !== undefined) c.spin = p.spin;
+      if (p.bound) c.bound = true;
+      if (p.hidden) c.hidden = true;
+      return c;
+    });
+    const ballP = parts.find((p) => p.type === "ball" && p.role === "goalBall");
+    if (ballP) levelParts.push({ type: "ball", x: ballP.x, y: ballP.y, role: "goalBall", editable: false });
+    const goalP = parts.find((p) => p.type === "goal");
+    const goal = goalP
+      ? { kind: goalP.kind, role: "goalBall", zone: { x: goalP.x - goalP.w / 2, y: goalP.y - goalP.h / 2, w: goalP.w, h: goalP.h } }
+      : null;
+    return {
+      name: name || "Custom Level",
+      hint: name ? "Your level: get the ball to the target." : "Test build.",
+      goal, parts: levelParts,
+      inventory: Object.assign({}, designInv),
+      custom: true,
+    };
+  }
+
+  function designReady() {
+    const hasBall = parts.some((p) => p.type === "ball" && p.role === "goalBall");
+    const hasGoal = parts.some((p) => p.type === "goal");
+    if (!hasBall) { alert("Add a Ball start first — drag “Ball start” onto the board."); return false; }
+    if (!hasGoal) { alert("Add a Goal first — drag “Goal” onto the board."); return false; }
+    if (!Object.values(designInv).some((n) => n > 0)) {
+      if (!confirm("The solver has no tools (🎒 Tools is empty). Test anyway?")) return false;
+    }
+    return true;
+  }
+
+  // ---- test / edit round-trip ----
+  function testDesign() {
+    if (!designReady()) return;
+    const lv = buildLevelFromDesign(designName || "Test Run");
+    lv._designName = designName;     // remembered so “Back to editing” restores the name
+    lv._fromDesign = true;
+    designing = false;
+    loadLevelObj(lv);                // clears the .designing class
+    document.body.classList.add("testing");
+    levelHintEl.textContent = "TEST — solve it yourself to confirm it’s beatable, then ✎ Edit to keep building.";
+  }
+
+  function editCurrent() {
+    if (currentLevel) enterDesigner(currentLevel);
+    else enterDesigner(null);
+  }
+
+  // ---- save ----
+  function saveDesign() {
+    if (!designReady()) return;
+    const name = (prompt("Name your level:", designName || "My Level") || "").trim();
+    if (!name) return;
+    designName = name;
+    const lv = buildLevelFromDesign(name);
+    const store = loadCustomStore();
+    store[name] = lv;
+    saveCustomStore(store);
+    rebuildLevelSelect();
+    levelNameEl.textContent = "✎ Level Designer — " + name;
+    binTip.textContent = "Saved “" + name + "” ✓  Find it in the level menu under “My Levels”.";
+  }
+
+  // ---- goal kind toggle ----
+  function updateGoalKindBtn() {
+    dGoalKind.textContent = goalKind === "ring" ? "◎ Ring goal" : "🏀 Basket goal";
+    dGoalKind.title = "Goal type: " + goalKind + " (click to switch). Ring = enter from any side; Basket = drop in from the top.";
+  }
+  function toggleGoalKind() {
+    goalKind = goalKind === "ring" ? "basket" : "ring";
+    const gp = parts.find((p) => p.type === "goal");
+    if (gp) { gp.kind = goalKind; const s = GOAL_SIZE[goalKind]; gp.w = s.w; gp.h = s.h; }
+    updateGoalKindBtn();
+  }
+
+  // ---- Tools modal (solver inventory) ----
+  function openInv() {
+    invList.innerHTML = "";
+    for (const type of ORDER) {
+      const row = document.createElement("div");
+      row.className = "inv-row";
+      const nm = document.createElement("span");
+      nm.className = "inv-name";
+      nm.textContent = PART_DEFS[type].label;
+      const step = document.createElement("div");
+      step.className = "inv-stepper";
+      const minus = document.createElement("button"); minus.textContent = "−";
+      const cnt = document.createElement("span"); cnt.className = "inv-count"; cnt.textContent = designInv[type] || 0;
+      const plus = document.createElement("button"); plus.textContent = "+";
+      minus.addEventListener("click", () => { designInv[type] = Math.max(0, (designInv[type] || 0) - 1); cnt.textContent = designInv[type]; });
+      plus.addEventListener("click", () => { designInv[type] = Math.min(20, (designInv[type] || 0) + 1); cnt.textContent = designInv[type]; });
+      step.appendChild(minus); step.appendChild(cnt); step.appendChild(plus);
+      row.appendChild(nm); row.appendChild(step);
+      invList.appendChild(row);
+    }
+    invModal.classList.remove("hidden");
+  }
+  function closeInv() {
+    for (const k in designInv) if (!designInv[k]) delete designInv[k];
+    invModal.classList.add("hidden");
+  }
+
+  // ---- Share modal (export / import a code) ----
+  function openShare() {
+    if (!designReady()) return;
+    const lv = buildLevelFromDesign(designName || "Shared Level");
+    try { shareText.value = btoa(unescape(encodeURIComponent(JSON.stringify(lv)))); }
+    catch (_) { shareText.value = JSON.stringify(lv); }
+    shareModal.classList.remove("hidden");
+  }
+  function copyShare() {
+    shareText.select();
+    try { navigator.clipboard.writeText(shareText.value); } catch (_) { try { document.execCommand("copy"); } catch (__) {} }
+  }
+  function loadShare() {
+    const raw = shareText.value.trim();
+    if (!raw) return;
+    let lv = null;
+    try { lv = JSON.parse(decodeURIComponent(escape(atob(raw)))); }
+    catch (_) { try { lv = JSON.parse(raw); } catch (__) { alert("That doesn't look like a valid level code."); return; } }
+    if (!lv || !lv.parts) { alert("That doesn't look like a valid level code."); return; }
+    lv.custom = true;
+    shareModal.classList.add("hidden");
+    enterDesigner(lv); // open the imported level in the designer to tweak/save
+  }
+
+  // ---- custom levels in the level menu ----
+  function loadCustom(name) {
+    const store = loadCustomStore();
+    const lv = store[name];
+    if (!lv) { rebuildLevelSelect(); return; }
+    lv.custom = true;
+    loadLevelObj(lv);
+    document.body.classList.add("testing"); // expose ✎ Edit so they can tweak it
+    levelSelect.value = "c:" + name;
+  }
+
+  function rebuildLevelSelect() {
+    levelSelect.innerHTML = "";
+    const gP = document.createElement("optgroup"); gP.label = "Puzzles";
+    LEVELS.forEach((lv, i) => {
+      const opt = document.createElement("option");
+      opt.value = "b" + i; opt.textContent = lv.name; gP.appendChild(opt);
+    });
+    levelSelect.appendChild(gP);
+    const store = loadCustomStore();
+    const names = Object.keys(store);
+    if (names.length) {
+      const gC = document.createElement("optgroup"); gC.label = "My Levels";
+      names.forEach((n) => {
+        const opt = document.createElement("option");
+        opt.value = "c:" + n; opt.textContent = "✎ " + n; gC.appendChild(opt);
+      });
+      levelSelect.appendChild(gC);
+    }
+    const gN = document.createElement("optgroup"); gN.label = "Create";
+    const dopt = document.createElement("option");
+    dopt.value = "design"; dopt.textContent = "✎ Make a level…"; gN.appendChild(dopt);
+    levelSelect.appendChild(gN);
+    if (currentLevel && !designing) {
+      levelSelect.value = levelIndex >= 0 ? "b" + levelIndex : (currentLevel.custom ? "c:" + currentLevel.name : "b0");
+    }
+  }
+
   // ---------- button wiring ----------
   runBtn.addEventListener("click", toggleRun);
-  resetBtn.addEventListener("click", () => loadLevel(levelIndex));
+  resetBtn.addEventListener("click", () => { if (currentLevel) loadLevelObj(currentLevel); else loadLevel(levelIndex); });
+  document.getElementById("editBtn").addEventListener("click", editCurrent);
   document.getElementById("prevLevel").addEventListener("click", () => loadLevel(levelIndex - 1));
   document.getElementById("nextLevel").addEventListener("click", () => loadLevel(levelIndex + 1));
   document.getElementById("replayBtn").addEventListener("click", () => stopRun());
-  document.getElementById("winNextBtn").addEventListener("click", () => loadLevel(levelIndex + 1));
-  levelSelect.addEventListener("change", () => loadLevel(parseInt(levelSelect.value, 10)));
+  document.getElementById("winNextBtn").addEventListener("click", () => {
+    if (document.body.classList.contains("testing")) editCurrent();
+    else loadLevel(levelIndex + 1);
+  });
+  levelSelect.addEventListener("change", () => {
+    const v = levelSelect.value;
+    if (v === "design") enterDesigner(null);
+    else if (v.charAt(0) === "c" && v.charAt(1) === ":") loadCustom(v.slice(2));
+    else if (v.charAt(0) === "b") loadLevel(parseInt(v.slice(1), 10));
+  });
+
+  // designer controls
+  dGoalKind.addEventListener("click", toggleGoalKind);
+  document.getElementById("dTools").addEventListener("click", openInv);
+  document.getElementById("dShare").addEventListener("click", openShare);
+  document.getElementById("dSave").addEventListener("click", saveDesign);
+  document.getElementById("dTest").addEventListener("click", testDesign);
+  document.getElementById("dExit").addEventListener("click", exitDesigner);
+  document.getElementById("invDone").addEventListener("click", closeInv);
+  document.getElementById("shareCopy").addEventListener("click", copyShare);
+  document.getElementById("shareLoad").addEventListener("click", loadShare);
+  document.getElementById("shareClose").addEventListener("click", () => shareModal.classList.add("hidden"));
 
   // ---------- init ----------
   function init() {
-    LEVELS.forEach((lv, i) => {
-      const opt = document.createElement("option");
-      opt.value = String(i);
-      opt.textContent = lv.name;
-      levelSelect.appendChild(opt);
-    });
+    rebuildLevelSelect();
     resize();
     loadLevel(0);
     requestAnimationFrame(frame);

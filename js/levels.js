@@ -17,6 +17,7 @@ const BOARD_W = 960, BOARD_H = 600, FLOOR_TOP = 566;
       wall(BOARD_W + 30, BOARD_H / 2, 60, BOARD_H + 200),    // right: inner edge at x=960
     ];
     if (ceiling) b.push(wall(BOARD_W / 2, -30, BOARD_W + 200, 60)); // ceiling: inner edge y=0
+    b.forEach((p) => { p.bound = true; }); // tag board-edges so the Level Designer keeps them fixed
     return b;
   }
 
@@ -344,4 +345,5 @@ const BOARD_W = 960, BOARD_H = 600, FLOOR_TOP = 566;
   };
 
   window.LEVELS = [L1, L2, L3, L4, L5, L6, L7, L8, L9, L10, L11, L12, L13, L14, L15, L16, L17, L18, L19, SB];
+  window.makeBounds = bounds; // used by the Level Designer for a fresh board's floor/walls
 })();

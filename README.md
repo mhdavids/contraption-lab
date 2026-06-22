@@ -12,12 +12,22 @@ solve each level by getting the basketball into the hoop (or the balloon into th
 - Press **Run** (or `Space`) to start the simulation; **Stop** returns to building.
 - **Reset** restores the level so you can try a fresh contraption.
 
+## Level Designer
+Pick **✎ Make a level…** from the level menu to build your own puzzles:
+- **Drag walls & parts** onto the board as fixed obstacles, and set the **Ball start** and the **Goal**.
+- Toggle the goal between a **Ring** (enter from any side) and a **Basket** (drop in from the top).
+- **🎒 Tools** — choose exactly which parts, and how many, the solver gets.
+- **▶ Test** — play your level yourself to confirm it can be beaten, then **✎ Edit** to keep tweaking.
+- **💾 Save** — stores it in your browser under **My Levels**.
+- **⤴ Share** — export a code to back up or share a level, or paste one in to import it.
+
 ## Parts
 Ball · Plank · Seesaw · Fan (updraft) · Balloon (buoyancy) · Conveyor · Trampoline ·
 Cannon (launcher) · Spinner (motor) · Domino · Crate (heavy) · Bumper (bouncy)
 
 ## Levels
-10 hand-built puzzles that introduce mechanics one at a time, plus a free-build **Sandbox**.
+19 hand-built puzzles that ramp from one-mechanic teaching levels to multi-step
+contraptions, plus a free-build **Sandbox** and a full **Level Designer** for your own puzzles.
 
 ## Tech
 Vanilla HTML / Canvas / JavaScript — no build step. Physics by

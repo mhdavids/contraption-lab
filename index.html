@@ -23,12 +23,22 @@
         <div class="level-hint" id="levelHint">Hint goes here</div>
       </div>
 
-      <div class="controls">
+      <div class="controls" id="playControls">
         <button id="prevLevel" class="btn btn-ghost" title="Previous level">‹</button>
         <select id="levelSelect" class="level-select" title="Jump to level"></select>
         <button id="nextLevel" class="btn btn-ghost" title="Next level">›</button>
+        <button id="editBtn" class="btn btn-tool" title="Back to the designer">✎ Edit</button>
         <button id="resetBtn" class="btn btn-tool" title="Clear the run / reset parts">↺ Reset</button>
         <button id="runBtn" class="btn btn-run" title="Run the machine (Space)">▶ Run</button>
+      </div>
+
+      <div class="controls" id="designControls">
+        <button id="dGoalKind" class="btn btn-tool" title="Toggle goal type (ring / basket)">◎ Ring</button>
+        <button id="dTools" class="btn btn-tool" title="Choose the solver's tools">🎒 Tools</button>
+        <button id="dShare" class="btn btn-tool" title="Export / import a level code">⤴ Share</button>
+        <button id="dSave" class="btn btn-tool" title="Save to this browser">💾 Save</button>
+        <button id="dTest" class="btn btn-run" title="Test your level (Space)">▶ Test</button>
+        <button id="dExit" class="btn btn-ghost" title="Exit the designer">✕</button>
       </div>
     </header>
 
@@ -56,10 +66,36 @@
     </main>
 
     <footer id="bin">
-      <div class="bin-label">Parts Bin</div>
+      <div class="bin-label" id="binLabel">Parts Bin</div>
       <div id="binItems" class="bin-items"></div>
       <div class="bin-tip" id="binTip">Drag a part onto the board. Click a placed part to rotate or delete it.</div>
     </footer>
+
+    <!-- Designer: choose the solver's tools -->
+    <div id="invModal" class="overlay hidden">
+      <div class="modal-card">
+        <h2>🎒 Solver's Tools</h2>
+        <p class="modal-sub">How many of each part can the solver use? Set to 0 to leave it out.</p>
+        <div id="invList" class="inv-list"></div>
+        <div class="modal-actions">
+          <button id="invDone" class="btn btn-run">Done</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Designer: export / import a level code -->
+    <div id="shareModal" class="overlay hidden">
+      <div class="modal-card">
+        <h2>⤴ Share / Import</h2>
+        <p class="modal-sub">Copy this code to share or back up your level — or paste a code and press <b>Load</b>.</p>
+        <textarea id="shareText" class="share-text" spellcheck="false" autocomplete="off"></textarea>
+        <div class="modal-actions">
+          <button id="shareCopy" class="btn btn-tool">⧉ Copy</button>
+          <button id="shareLoad" class="btn btn-tool">⤓ Load code</button>
+          <button id="shareClose" class="btn btn-run">Close</button>
+        </div>
+      </div>
+    </div>
   </div>
 
   <!-- Rotate-to-landscape hint for narrow portrait phones -->
